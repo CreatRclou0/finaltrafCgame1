@@ -1,41 +1,6 @@
 // paths.js
 // Trajectory calculator for vehicles in the traffic simulation
-// Handles lane changes and complex path following for realistic movement
-
-// Duration of a lane change (seconds)
-const DEFAULT_LANE_CHANGE_DURATION = 4;
-
-/**
- * Smooth lane change physics for vehicles
- * @param {Object} vehicle - Vehicle object with lane change properties
- * @property {number} id
- * @property {boolean} isRegularVeh
- * @property {number} fracLaneOptical - Fractional lane position (0=start, 1=end)
- * @property {number} laneOld - Starting lane position
- * @property {number} lane - Target lane position
- * @property {number} speed
- * @property {number} dt_LC - Lane change duration
- * @property {number} dt_afterLC - Time since lane change started
- */
-function update_v_dvdt_optical(vehicle) {
-    if ((vehicle.id !== 1) && vehicle.isRegularVeh) {
-        const laneFraction = vehicle.fracLaneOptical;
-        const laneStart = vehicle.laneOld;
-        const laneEnd = vehicle.lane;
-        const dt_LC = vehicle.dt_LC || DEFAULT_LANE_CHANGE_DURATION;
-        const dt_afterLC = vehicle.dt_afterLC;
-
-        // Lane change acceleration
-        const acc_v = laneFraction * 4 / (dt_LC * dt_LC);
-        const dt = (dt_afterLC < 0.5 * dt_LC) ? dt_afterLC : dt_LC - dt_afterLC;
-        const dv = (dt_afterLC < 0.5 * dt_LC)
-            ? (1 - laneFraction) + 0.5 * acc_v * dt * dt
-            : 1 - 0.5 * acc_v * dt * dt;
-        vehicle.v = (dt_afterLC > dt_LC)
-            ? laneEnd : laneStart + dv * (laneEnd - laneStart);
-        vehicle.dvdt = (dt_afterLC > dt_LC) ? 0 : acc_v * dt * (laneEnd - laneStart);
-    }
-}
+// Simplified version without lane changing logic
 
 /**
  * Pre-calculates stitching points for a trajectory
@@ -102,63 +67,15 @@ function trajFromSpec(u, trajP) {
     return [x, y];
 }
 
-/**
- * Returns x at distance u along a trajectory
- * @param {number} u
- * @param {Object} trajP
- * @returns {number}
- */
-function trajFromSpec_x(u, trajP) {
-    let iSegm = 0;
-    while ((u > trajP.u[iSegm + 1]) && (iSegm + 1 < trajP.xCenter.length)) iSegm++;
-    const curv = (trajP.phi[iSegm + 1] - trajP.phi[iSegm]) / (trajP.u[iSegm + 1] - trajP.u[iSegm]);
-    const straightSegm = Math.abs(curv) < 1e-6;
-    const r = straightSegm ? 1e6 : 1 / curv;
-    return straightSegm
-        ? trajP.x[iSegm] + (u - trajP.u[iSegm]) * Math.cos(trajP.phi[iSegm])
-        : trajP.xCenter[iSegm] + r * Math.sin(trajP.phi[iSegm] + curv * (u - trajP.u[iSegm]));
-}
-
-/**
- * Returns y at distance u along a trajectory
- * @param {number} u
- * @param {Object} trajP
- * @returns {number}
- */
-function trajFromSpec_y(u, trajP) {
-    let iSegm = 0;
-    while ((u > trajP.u[iSegm + 1]) && (iSegm + 1 < trajP.xCenter.length)) iSegm++;
-    const curv = (trajP.phi[iSegm + 1] - trajP.phi[iSegm]) / (trajP.u[iSegm + 1] - trajP.u[iSegm]);
-    const straightSegm = Math.abs(curv) < 1e-6;
-    const r = straightSegm ? 1e6 : 1 / curv;
-    return straightSegm
-        ? trajP.y[iSegm] + (u - trajP.u[iSegm]) * Math.sin(trajP.phi[iSegm])
-        : trajP.yCenter[iSegm] - r * Math.cos(trajP.phi[iSegm] + curv * (u - trajP.u[iSegm]));
-}
-
-// Example: Pre-calculate a path for a typical intersection
-// Adjust these values to match your intersection geometry
+// Constants for intersection geometry
 const INTERSECTION_LANE_WIDTH = 15; // meters (matches CONFIG.LANE_WIDTH)
 const INTERSECTION_RADIUS = 30; // meters (for curved turns)
 const STRAIGHT_SEGMENT = 40; // meters
 
-// Example: left turn trajectory (customize for your intersection)
-const leftTurnTraj = traj_precalc(
-    0, // x0
-    0, // y0
-    0, // phi0 (facing up)
-    [STRAIGHT_SEGMENT, Math.PI * INTERSECTION_RADIUS / 2], // du: straight, then quarter circle
-    [0, 1 / INTERSECTION_RADIUS] // curv: straight, then left turn
-);
-
 // Export functions for use in simulation
 export {
-    update_v_dvdt_optical,
     traj_precalc,
     trajFromSpec,
-    trajFromSpec_x,
-    trajFromSpec_y,
-    leftTurnTraj,
     INTERSECTION_LANE_WIDTH,
     INTERSECTION_RADIUS,
     STRAIGHT_SEGMENT

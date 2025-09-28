@@ -4,7 +4,6 @@ import { CarManager } from './cars.js';
 import { SensorSystem } from './sensors.js';
 import { Statistics } from './statistics.js';
 import { CONFIG } from './config.js';
-// ...existing code...
 
 export class GameEngine {
     constructor(canvas, ctx) {
@@ -210,39 +209,4 @@ export class GameEngine {
     getSensorSystem() {
         return this.getCurrentModeComponents().sensorSystem;
     }
-
-    setLaneMapping(laneMapping, paths, getPathIndex) {
-        this.laneMapping = laneMapping;
-        this.paths = paths;
-        this.getPathIndex = getPathIndex;
-    }
-
-    assignPathToCar(car) {
-        const pathIndex = this.getPathIndex(car.dir, car.lane, car.move);
-        if (pathIndex !== null && this.paths[pathIndex]) {
-            car.path = this.paths[pathIndex];
-            car.pathIndex = pathIndex;
-            car.pathProgress = 0;
-        }
-    }
-
-    updateCarPathFollowing(car, deltaTime) {
-        if (!car.path || car.pathProgress >= car.path.length) return;
-
-        const target = car.path[car.pathProgress];
-        const dx = target.x - car.x;
-        const dy = target.y - car.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        const speed = car.speed * deltaTime;
-        if (distance < speed) {
-            car.x = target.x;
-            car.y = target.y;
-            car.pathProgress++;
-        } else {
-            car.x += (dx / distance) * speed;
-            car.y += (dy / distance) * speed;
-        }
-    }
 }
-
